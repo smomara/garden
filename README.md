@@ -37,6 +37,7 @@ Garden helps you build a website that:
 * Automatic backlinks show what references each page
 * Clean, minimal design that loads instantly
 * No JavaScript, no tracking
+* Custom HTML templates and CSS styling support
 
 ## Usage
 
@@ -55,7 +56,35 @@ Garden helps you build a website that:
     Welcome to my garden! Check out my [thoughts](thoughts.html)
     ```
 
-3. Generate the site:
+3. Optionally customize the look:
+
+    ```bash
+    # Create custom styles directory
+    mkdir styles
+
+    # Add custom template
+    # styles/template.html
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>{{title}}</title>
+        <style>{{custom_css}}</style>
+    </head>
+    <body>
+        {{content}}
+    </body>
+    </html>
+
+    # Add custom CSS
+    # styles/custom.css
+    body {
+        font-family: monospace;
+        max-width: 650px;
+        margin: 0 auto;
+    }
+    ```
+
+4. Generate the site:
 
     ```bash
     cabal run
@@ -71,6 +100,22 @@ Garden helps you build a website that:
 │   └── Main.hs         # Main program
 ├── content/            # Your markdown files
 │   └── *.md
+├── styles/            # Optional custom styling
+│   ├── template.html  # Custom HTML template
+│   └── custom.css     # Custom CSS styles
 └── site/              # Generated HTML
     └── *.html
 ```
+
+## Customization
+
+Garden supports custom HTML templates and CSS through the `styles` directory:
+
+* `styles/template.html`: Custom HTML template with placeholders:
+  * `{{title}}`: Page title
+  * `{{Content}}`: Page content
+  * `{{custom_css}}`: Custom CSS styles
+* `styles/custom.css`: Custom CSS styles for your site
+
+If these files don't exist, Garden will use defaults
+that emphasize clean, minimal styling.

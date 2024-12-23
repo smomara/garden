@@ -1,5 +1,6 @@
 dist-newstyle/
 site/
+styles/
 content/
 *~
 *.swp

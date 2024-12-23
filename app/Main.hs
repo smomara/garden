@@ -2,13 +2,15 @@
 
 module Main where
 
-import System.Directory (listDirectory, createDirectoryIfMissing, doesFileExist)
+import System.Directory (listDirectory, createDirectoryIfMissing, doesFileExist, removeFile)
 import System.FilePath (takeBaseName, takeExtension, (</>))
 import qualified Data.Map as M
 import qualified Commonmark as CM
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Data.List (isSuffixOf, isPrefixOf)
+import Data.List (isSuffixOf)
+import qualified Data.Set as S
+import Control.Monad (forM_)
 
 data Page = Page
     { pageTitle :: String
@@ -98,6 +100,16 @@ generateHTML config backlinks page =
 replace :: String -> String -> String -> String
 replace old new content = T.unpack $ T.replace (T.pack old) (T.pack new) (T.pack content)
 
+pruneOrphanedFiles :: [String] -> IO ()
+pruneOrphanedFiles validBasenames = do
+    htmlFiles <- filter (\f -> takeExtension f == ".html") <$> listDirectory "site"
+    let htmlBasenameSet = S.fromList $ map takeBaseName htmlFiles
+        validBasenameSet = S.fromList validBasenames
+        orphanedFiles = S.difference htmlBasenameSet validBasenameSet
+
+    forM_ orphanedFiles $ \basename -> 
+        removeFile ("site" </> basename ++ ".html")
+
 main :: IO ()
 main = do
     createDirectoryIfMissing True "site"
@@ -111,7 +123,10 @@ main = do
     let pageMap = [(pageTitle p, p) | p <- pages]
         backlinks = M.fromListWith (++) 
             [(target, [pageTitle p]) | p <- pages, target <- pageLinks p]
+        validBaseNames = map pageTitle pages
 
     mapM_ (\p -> writeFile ("site" </> pageTitle p ++ ".html") 
                           (generateHTML config backlinks p))
           pages
+
+    pruneOrphanedFiles validBaseNames

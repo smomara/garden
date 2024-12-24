@@ -35,6 +35,7 @@ Garden helps you build a website that:
 
 * Write in simple markdown
 * Automatic backlinks show what references each page
+* Site map shows most connected pages and good starting points
 * Clean, minimal design that loads instantly
 * No JavaScript, no tracking
 * Custom HTML templates and CSS styling support
@@ -90,20 +91,28 @@ Garden helps you build a website that:
     cabal run
     ```
 
-    Your static site will be generated in the `site` directory
+    Your static site will be generated in the `site` directory with:
+      * An HTML file for each markdown file
+      * Backlinks at the bottom of each page
+      * A site map (`map.html`) showing:
+        * Best starting points based on outgoing links
+        * Most connected pages
+        * Pages that need more connections
 
 ## Project Structure
 
 ```bash
 .
 ├── app/
-│   └── Main.hs         # Main program
-├── content/            # Your markdown files
+│   ├── Main.hs            # Main program
+│   ├── Types.hs           # Core types
+│   └── TableOfContents.hs # Site map generation
+├── content/               # Your markdown files
 │   └── *.md
-├── styles/            # Optional custom styling
-│   ├── template.html  # Custom HTML template
-│   └── custom.css     # Custom CSS styles
-└── site/              # Generated HTML
+├── styles/                # Optional custom styling
+│   ├── template.html      # Custom HTML template
+│   └── custom.css         # Custom CSS styles
+└── site/                  # Generated HTML
     └── *.html
 ```
 

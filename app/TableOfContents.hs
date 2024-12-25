@@ -8,7 +8,7 @@ module TableOfContents
 import qualified Data.Map as M
 import Data.List (sortOn)
 import Data.Ord (Down(..))
-import Types (Page(..), PageMap)
+import Types (Page(..))
 
 data PageAnalytics = PageAnalytics 
     { incomingLinks :: Int
@@ -27,8 +27,8 @@ analyzePages backlinks pages = M.fromList
             outgoing = length $ pageLinks page
         in PageAnalytics incoming outgoing (incoming + outgoing)
 
-generateTOC :: [Page] -> PageMap -> M.Map String [String] -> String
-generateTOC pages pageMap backlinks = unlines
+generateTOC :: [Page] -> M.Map String [String] -> String
+generateTOC pages backlinks = unlines
     [ "# Site Map"
     , ""
     , "## Starting Points"
@@ -45,7 +45,7 @@ generateTOC pages pageMap backlinks = unlines
     ]
   where
     analytics = analyzePages backlinks pages
-    
+
     formatLink title count suffix = 
         "- [" ++ title ++ "](" ++ title ++ ".html) (" ++ show count ++ suffix ++ ")"
 
@@ -54,13 +54,13 @@ generateTOC pages pageMap backlinks = unlines
         | (title, count) <- take 3 $ sortOn (Down . snd)
             [(title, outgoingLinks ana) | (title, ana) <- M.toList analytics, outgoingLinks ana > 0]
         ]
-    
+
     mostConnectedList =
         [ formatLink title count " total links"
         | (title, count) <- take 5 $ sortOn (Down . snd)
             [(title, totalLinks ana) | (title, ana) <- M.toList analytics]
         ]
-    
+
     leastConnectedList =
         [ formatLink title count " total links"
         | (title, count) <- take 5 $ sortOn snd

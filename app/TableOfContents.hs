@@ -6,6 +6,7 @@ module TableOfContents
     ) where
 
 import qualified Data.Map as M
+import Data.Map (Map)
 import Data.List (sortOn)
 import Data.Ord (Down(..))
 import Types (Page(..))
@@ -16,7 +17,7 @@ data PageAnalytics = PageAnalytics
     , totalLinks    :: Int
     } deriving Show
 
-analyzePages :: M.Map String [String] -> [Page] -> M.Map String PageAnalytics
+analyzePages :: Map String [String] -> [Page] -> Map String PageAnalytics
 analyzePages backlinks pages = M.fromList
     [ (pageTitle page, analyzeOnePage page)
     | page <- pages
@@ -27,7 +28,7 @@ analyzePages backlinks pages = M.fromList
             outgoing = length $ pageLinks page
         in PageAnalytics incoming outgoing (incoming + outgoing)
 
-generateTOC :: [Page] -> M.Map String [String] -> String
+generateTOC :: [Page] -> Map String [String] -> String
 generateTOC pages backlinks = unlines
     [ "# Site Map"
     , ""

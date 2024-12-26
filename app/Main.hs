@@ -8,6 +8,7 @@ import Control.Monad (forM_)
 import Data.List (isSuffixOf)
 import Data.Map (Map)
 import qualified Data.Map as M
+import Data.Maybe (fromMaybe)
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -15,27 +16,26 @@ import System.Directory (createDirectoryIfMissing, doesFileExist, listDirectory,
 import System.FilePath (takeBaseName, takeExtension, (</>))
 import TableOfContents (generateTOC)
 import Types (Page (..))
-import Data.Maybe (fromMaybe)
 
 data SiteConfig = SiteConfig
-  { customCss :: Maybe String,
-    customHtml :: Maybe String
+  { customCss :: Maybe String
+  , customHtml :: Maybe String
   }
 
 findLinks :: String -> [String]
 findLinks str = go str []
-  where
-    go "" acc = acc
-    go s acc = case break (== '[') s of
+ where
+  go "" acc = acc
+  go s acc = case break (== '[') s of
+    (_, "") -> acc
+    (_, _ : rest) -> case break (== ']') rest of
       (_, "") -> acc
-      (_, _ : rest) -> case break (== ']') rest of
-        (_, "") -> acc
-        (_, ']' : '(' : url) -> case break (== ')') url of
-          (link, rest')
-            | ".html" `isSuffixOf` link ->
-                go rest' (takeBaseName link : acc)
-          (_, rest') -> go rest' acc
+      (_, ']' : '(' : url) -> case break (== ')') url of
+        (link, rest')
+          | ".html" `isSuffixOf` link ->
+              go rest' (takeBaseName link : acc)
         (_, rest') -> go rest' acc
+      (_, rest') -> go rest' acc
 
 markdownToHtml :: String -> String
 markdownToHtml content = case CM.commonmark @(CM.Html ()) "doc" (T.pack content) of
@@ -61,9 +61,9 @@ processFile path = do
   content <- readFile path
   pure $
     Page
-      { pageTitle = takeBaseName path,
-        pageHtml = markdownToHtml content,
-        pageLinks = findLinks content
+      { pageTitle = takeBaseName path
+      , pageHtml = markdownToHtml content
+      , pageLinks = findLinks content
       }
 
 getPreview :: Int -> String -> String
@@ -74,39 +74,39 @@ getPreview n content =
 generateHTML :: SiteConfig -> Map String [String] -> Page -> String
 generateHTML config backlinks page =
   maybe defaultTemplate insertIntoTemplate (customHtml config)
-  where
-    defaultTemplate =
-      unlines
-        [ "<!DOCTYPE html>",
-          "<html><head><title>" ++ pageTitle page ++ "</title>",
-          "<style>",
-          "body { font-family: monospace; max-width: 650px; margin: 40px auto; padding: 20px; }",
-          "a { color: #333; }",
-          ".backlinks { margin-top: 2em; border-top: 1px solid #eee; padding-top: 1em; }",
-          fromMaybe "" (customCss config),
-          "</style></head><body>",
-          pageHtml page,
-          generateBacklinks,
-          "</body></html>"
-        ]
+ where
+  defaultTemplate =
+    unlines
+      [ "<!DOCTYPE html>"
+      , "<html><head><title>" ++ pageTitle page ++ "</title>"
+      , "<style>"
+      , "body { font-family: monospace; max-width: 650px; margin: 40px auto; padding: 20px; }"
+      , "a { color: #333; }"
+      , ".backlinks { margin-top: 2em; border-top: 1px solid #eee; padding-top: 1em; }"
+      , fromMaybe "" (customCss config)
+      , "</style></head><body>"
+      , pageHtml page
+      , generateBacklinks
+      , "</body></html>"
+      ]
 
-    insertIntoTemplate template =
-      replace "{{title}}" (pageTitle page) $
-        replace "{{content}}" (pageHtml page ++ generateBacklinks) $
-          replace "{{custom_css}}" (fromMaybe "" (customCss config)) template
+  insertIntoTemplate template =
+    replace "{{title}}" (pageTitle page) $
+      replace "{{content}}" (pageHtml page ++ generateBacklinks) $
+        replace "{{custom_css}}" (fromMaybe "" (customCss config)) template
 
-    generateBacklinks =
-      case M.lookup (pageTitle page) backlinks of
-        Just links
-          | not (null links) ->
-              unlines
-                [ "<div class='backlinks'><h2>See also:</h2>",
-                  unlines [makeLink title | title <- links],
-                  "</div>"
-                ]
-        _ -> ""
+  generateBacklinks =
+    case M.lookup (pageTitle page) backlinks of
+      Just links
+        | not (null links) ->
+            unlines
+              [ "<div class='backlinks'><h2>See also:</h2>"
+              , unlines [makeLink title | title <- links]
+              , "</div>"
+              ]
+      _ -> ""
 
-    makeLink title = "<a href='" ++ title ++ ".html'>" ++ title ++ "</a><br>"
+  makeLink title = "<a href='" ++ title ++ ".html'>" ++ title ++ "</a><br>"
 
 replace :: String -> String -> String -> String
 replace old new content = T.unpack $ T.replace (T.pack old) (T.pack new) (T.pack content)
